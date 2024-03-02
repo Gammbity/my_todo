@@ -1,4 +1,3 @@
-import datetime
 from .models import TodoModel, User
 from .serializers import TodoSerializer, TodoUpdateSerialezer, UserSerializer
 from rest_framework import status
@@ -15,13 +14,13 @@ class UserApiView(APIView):
     
 class TodoApiView(APIView):
     def get(self, request):
-        todos = TodoModel.objects.filter(user=request.user)
+        # todos = TodoModel.objects.filter(user=request.user.id)
+        todos = TodoModel.objects.all()
         serializer = TodoSerializer(todos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
         serializer = TodoSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -41,14 +40,14 @@ class TodoIsCheckApiView(APIView):
 
     def get(self, request):
         print(request.user)
-        objects = TodoModel.objects.filter(is_did=False, user=request.user)
+        objects = TodoModel.objects.filter(is_did=False, user=request.user.id)
         serializer = TodoSerializer(objects, many=True)
         return Response(serializer.data)
 
 class TodoCheckApiView(APIView):
 
     def get(self, request):
-        objects = TodoModel.objects.filter(is_did=True, user=request.user)
+        objects = TodoModel.objects.filter(is_did=True, user=request.user.id)
         serializer = TodoSerializer(objects, many=True)
         return Response(serializer.data)
     
