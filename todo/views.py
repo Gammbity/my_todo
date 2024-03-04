@@ -1,8 +1,26 @@
+import datetime
+from functools import wraps
+from django.forms import ValidationError
+from django.http import HttpResponseForbidden
 from .models import TodoModel, User
 from .serializers import TodoSerializer, TodoUpdateSerialezer, UserSerializer
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny 
+from rest_framework.schemas.openapi import AutoSchema
+from django.db.models import Q
+
+class TodoCountApiView(APIView):
+    def get(self, request):
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        todos = TodoModel.objects.filter(Q(when__gte=start_date) & Q(when__lte=end_date))
+        count = todos.count()
+        return Response(count)
 
 class UserApiView(APIView):
     def post(self, request):
@@ -13,9 +31,9 @@ class UserApiView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 class TodoApiView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
-        # todos = TodoModel.objects.filter(user=request.user.id)
-        todos = TodoModel.objects.all()
+        todos = TodoModel.objects.filter(user=request.user.id)
         serializer = TodoSerializer(todos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -27,7 +45,6 @@ class TodoApiView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 class TodoUpdateApiView(APIView):
-
     def patch(self, request, pk):
         obj = TodoModel.objects.get(pk=pk)
         serializer = TodoUpdateSerialezer(obj, data=request.data, partial=True)
@@ -37,7 +54,6 @@ class TodoUpdateApiView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 class TodoIsCheckApiView(APIView):
-
     def get(self, request):
         print(request.user)
         objects = TodoModel.objects.filter(is_did=False, user=request.user.id)
@@ -54,8 +70,8 @@ class TodoCheckApiView(APIView):
 
 class TodoFilterApiView(APIView):
     def get(self, request, format=None):
+        print(request.GET.get)
         created_at = request.GET.get('search')
-        print(created_at)
         if created_at:
             todos = TodoModel.objects.filter(created_at=created_at)
             serializer = TodoSerializer(todos, many=True)
